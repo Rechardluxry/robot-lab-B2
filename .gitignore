@@ -26,6 +26,8 @@
 **/videos/*
 **/wandb/*
 **/.neptune/*
+!memory/logs/
+!memory/logs/*.log
 docker/artifacts/
 *.tmp
 *.npz

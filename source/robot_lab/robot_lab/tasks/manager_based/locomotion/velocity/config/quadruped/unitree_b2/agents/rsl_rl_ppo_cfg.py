@@ -43,3 +43,8 @@ class UnitreeB2FlatPPORunnerCfg(UnitreeB2RoughPPORunnerCfg):
 
         self.max_iterations = 5000
         self.experiment_name = "unitree_b2_flat"
+
+
+@configclass
+class UnitreeB2StairPPORunnerCfg(UnitreeB2RoughPPORunnerCfg):
+    experiment_name = "unitree_b2_stair"

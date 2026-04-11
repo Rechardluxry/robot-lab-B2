@@ -15,6 +15,8 @@ from isaaclab.managers import RewardTermCfg as RewTerm
 from isaaclab.sensors import ContactSensor, RayCaster
 from isaaclab.utils.math import quat_apply_inverse, yaw_quat
 
+from .utils import is_robot_on_terrain
+
 if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedRLEnv
 
@@ -610,6 +612,110 @@ def upward(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("r
     # extract the used quantities (to enable type-hinting)
     asset: RigidObject = env.scene[asset_cfg.name]
     reward = torch.square(1 - asset.data.projected_gravity_b[:, 2])
+    return reward
+
+
+def stair_progress(
+    env: ManagerBasedRLEnv,
+    command_name: str,
+    terrain_name: str,
+    max_speed: float,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+) -> torch.Tensor:
+    """Reward effective forward progress along the stair direction.
+
+    The stair corridor is aligned with the world +x axis, so the reward uses forward world-frame velocity
+    and only activates when the robot is on the stair terrain with a forward command.
+    """
+    asset: RigidObject = env.scene[asset_cfg.name]
+    on_stairs = is_robot_on_terrain(env, terrain_name)
+    forward_cmd = env.command_manager.get_command(command_name)[:, 0] > 0.1
+    reward = torch.clamp(asset.data.root_lin_vel_w[:, 0], min=0.0, max=max_speed)
+    reward *= on_stairs & forward_cmd
+    reward *= torch.clamp(-env.scene["robot"].data.projected_gravity_b[:, 2], 0.0, 0.7) / 0.7
+    return reward
+
+
+def centerline_reward(
+    env: ManagerBasedRLEnv,
+    terrain_name: str,
+    sigma: float,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+) -> torch.Tensor:
+    """Reward staying close to the stair corridor centerline in env-local coordinates."""
+    asset: RigidObject = env.scene[asset_cfg.name]
+    on_stairs = is_robot_on_terrain(env, terrain_name)
+    y_offset = asset.data.root_pos_w[:, 1] - env.scene.env_origins[:, 1]
+    reward = torch.exp(-torch.square(y_offset) / (sigma**2))
+    reward *= on_stairs
+    reward *= torch.clamp(-env.scene["robot"].data.projected_gravity_b[:, 2], 0.0, 0.7) / 0.7
+    return reward
+
+
+def stall_penalty(
+    env: ManagerBasedRLEnv,
+    command_name: str,
+    terrain_name: str,
+    min_forward_speed: float,
+    action_scale: float,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+) -> torch.Tensor:
+    """Penalize action churning without meaningful forward progress on stairs."""
+    asset: RigidObject = env.scene[asset_cfg.name]
+    on_stairs = is_robot_on_terrain(env, terrain_name)
+    forward_cmd = env.command_manager.get_command(command_name)[:, 0] > 0.1
+    stalled = asset.data.root_lin_vel_w[:, 0] < min_forward_speed
+    action_delta = torch.linalg.norm(env.action_manager.action - env.action_manager.prev_action, dim=1)
+    reward = action_scale * action_delta
+    reward *= on_stairs & forward_cmd & stalled
+    reward *= torch.clamp(-env.scene["robot"].data.projected_gravity_b[:, 2], 0.0, 0.7) / 0.7
+    return reward
+
+
+def back_slip_penalty(
+    env: ManagerBasedRLEnv,
+    command_name: str,
+    terrain_name: str,
+    slip_speed_threshold: float,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+) -> torch.Tensor:
+    """Penalize backward sliding while a forward stair command is active."""
+    asset: RigidObject = env.scene[asset_cfg.name]
+    on_stairs = is_robot_on_terrain(env, terrain_name)
+    forward_cmd = env.command_manager.get_command(command_name)[:, 0] > 0.1
+    backward_speed = torch.clamp(-(asset.data.root_lin_vel_w[:, 0] + slip_speed_threshold), min=0.0)
+    reward = backward_speed * (on_stairs & forward_cmd)
+    reward *= torch.clamp(-env.scene["robot"].data.projected_gravity_b[:, 2], 0.0, 0.7) / 0.7
+    return reward
+
+
+def foot_clearance_reward(
+    env: ManagerBasedRLEnv,
+    command_name: str,
+    terrain_name: str,
+    asset_cfg: SceneEntityCfg,
+    target_height: float,
+    std: float,
+    tanh_mult: float,
+) -> torch.Tensor:
+    """Reward swing-foot clearance near a target body-frame height while climbing stairs."""
+    asset: RigidObject = env.scene[asset_cfg.name]
+    on_stairs = is_robot_on_terrain(env, terrain_name)
+    forward_cmd = env.command_manager.get_command(command_name)[:, 0] > 0.1
+
+    foot_pos_rel = asset.data.body_pos_w[:, asset_cfg.body_ids, :] - asset.data.root_pos_w[:, :].unsqueeze(1)
+    foot_vel_rel = asset.data.body_lin_vel_w[:, asset_cfg.body_ids, :] - asset.data.root_lin_vel_w[:, :].unsqueeze(1)
+    foot_pos_body = torch.zeros(env.num_envs, len(asset_cfg.body_ids), 3, device=env.device)
+    foot_vel_body = torch.zeros(env.num_envs, len(asset_cfg.body_ids), 3, device=env.device)
+    for i in range(len(asset_cfg.body_ids)):
+        foot_pos_body[:, i, :] = math_utils.quat_apply_inverse(asset.data.root_quat_w, foot_pos_rel[:, i, :])
+        foot_vel_body[:, i, :] = math_utils.quat_apply_inverse(asset.data.root_quat_w, foot_vel_rel[:, i, :])
+
+    clearance_error = foot_pos_body[:, :, 2] - target_height
+    swing_gate = torch.tanh(tanh_mult * torch.linalg.norm(foot_vel_body[:, :, :2], dim=2))
+    reward = torch.sum(torch.exp(-torch.square(clearance_error) / (std**2)) * swing_gate, dim=1)
+    reward *= on_stairs & forward_cmd
+    reward *= torch.clamp(-env.scene["robot"].data.projected_gravity_b[:, 2], 0.0, 0.7) / 0.7
     return reward
 
 

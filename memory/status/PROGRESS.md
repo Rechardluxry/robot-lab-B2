@@ -10,10 +10,10 @@ DONE
 None
 
 ## Last Completed Task
-TASK-003
+TASK-004
 
 ## Last Change Record
-memory/changes/CHANGE-2026-04-11-14-58-08-TASK-003.md
+memory/changes/CHANGE-2026-04-11-15-25-13-TASK-004.md
 
 ## Current Status
 SUCCESS
@@ -23,5 +23,6 @@ Clean. Ready for next round.
 
 ## Handoff Instruction
 Start by reading TODO.md, DONE.md, this file, latest logs, and latest change record.
-Pick TASK-002 next and implement a reproducible smoke-check entrypoint that uses conda env `robotlab232_lxr` with interpreter `/home/hzzz/.conda/envs/robotlab232_lxr/bin/python`.
-Assume conversational context will expire; preserve command results and environment findings on disk.
+Pick TASK-005 next and run a real Isaac Lab runtime smoke check for `RobotLab-Isaac-Velocity-Stair-Unitree-B2-v0`.
+The code wiring is in place, but this round only completed static validation because plain `conda run -n robotlab232_lxr python` lacks the `pxr` runtime modules required for full Isaac Lab imports.
+Assume conversational context will expire; preserve exact commands, runtime errors, and any environment setup needed on disk.

@@ -46,3 +46,8 @@ class UnitreeB2RoughTrainerCfg(TrainerCfg):
 class UnitreeB2FlatTrainerCfg(UnitreeB2RoughTrainerCfg):
     max_iterations = 5000
     experiment_name = "unitree_b2_flat"
+
+
+@dataclass
+class UnitreeB2StairTrainerCfg(UnitreeB2RoughTrainerCfg):
+    experiment_name = "unitree_b2_stair"

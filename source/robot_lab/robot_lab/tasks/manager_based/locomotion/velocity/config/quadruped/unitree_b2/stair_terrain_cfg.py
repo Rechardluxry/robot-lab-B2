@@ -11,42 +11,7 @@ import trimesh
 import isaaclab.terrains as terrain_gen
 from isaaclab.terrains.sub_terrain_cfg import SubTerrainBaseCfg
 from isaaclab.terrains.terrain_generator_cfg import TerrainGeneratorCfg
-from isaaclab.terrains.trimesh.utils import make_plane
 from isaaclab.utils import configclass
-
-
-@configclass
-class StraightStairsTerrainCfg(SubTerrainBaseCfg):
-    """Configuration for a straight stairway aligned with the +x direction."""
-
-    stair_width: float = MISSING
-    """Usable stair width along the y-axis."""
-
-    start_platform_length: float = MISSING
-    """Flat landing before the first step."""
-
-    top_platform_length: float = MISSING
-    """Flat landing after the last step."""
-
-    step_height_range: tuple[float, float] = MISSING
-    """Minimum and maximum step height used by the curriculum."""
-
-    step_depth_range: tuple[float, float] = MISSING
-    """Minimum and maximum tread depth used by the curriculum."""
-
-    num_steps_range: tuple[int, int] = MISSING
-    """Minimum and maximum number of steps used by the curriculum."""
-
-    height_jitter: float = 0.0
-    """Deterministic per-step height perturbation amplitude."""
-
-    depth_jitter: float = 0.0
-    """Deterministic per-step depth perturbation amplitude."""
-
-    side_buffer: float = 0.0
-    """Half-width margin on both sides of the stair corridor."""
-
-    function = None
 
 
 def straight_stairs_terrain(difficulty: float, cfg: StraightStairsTerrainCfg) -> tuple[list[trimesh.Trimesh], np.ndarray]:
@@ -58,6 +23,9 @@ def straight_stairs_terrain(difficulty: float, cfg: StraightStairsTerrainCfg) ->
 
     stair_center_y = cfg.size[1] * 0.5
     stair_width = min(cfg.stair_width, cfg.size[1] - 2.0 * cfg.side_buffer)
+    ground_thickness = 0.02
+    corridor_min_y = stair_center_y - stair_width * 0.5
+    corridor_max_y = stair_center_y + stair_width * 0.5
 
     # Three curriculum bands:
     # 1) low steps and wide treads
@@ -85,9 +53,43 @@ def straight_stairs_terrain(difficulty: float, cfg: StraightStairsTerrainCfg) ->
         height_jitter = cfg.height_jitter
         depth_jitter = cfg.depth_jitter
 
-    meshes_list = [make_plane(cfg.size, 0.0, center_zero=False)]
+    meshes_list: list[trimesh.Trimesh] = []
 
-    start_x = cfg.start_platform_length
+    # Fill the side areas with thin support slabs instead of a full plane.
+    # This avoids coplanar overlap between the base plane and stair meshes during collider generation.
+    left_width = max(0.0, corridor_min_y)
+    if left_width > 0.0:
+        meshes_list.append(
+            trimesh.creation.box(
+                (cfg.size[0], left_width, ground_thickness),
+                trimesh.transformations.translation_matrix(
+                    (cfg.size[0] * 0.5, left_width * 0.5, -ground_thickness * 0.5)
+                ),
+            )
+        )
+    right_width = max(0.0, cfg.size[1] - corridor_max_y)
+    if right_width > 0.0:
+        meshes_list.append(
+            trimesh.creation.box(
+                (cfg.size[0], right_width, ground_thickness),
+                trimesh.transformations.translation_matrix(
+                    (cfg.size[0] * 0.5, corridor_max_y + right_width * 0.5, -ground_thickness * 0.5)
+                ),
+            )
+        )
+
+    start_platform_length = min(cfg.start_platform_length, cfg.size[0])
+    if start_platform_length > 0.0:
+        meshes_list.append(
+            trimesh.creation.box(
+                (start_platform_length, stair_width, ground_thickness),
+                trimesh.transformations.translation_matrix(
+                    (start_platform_length * 0.5, stair_center_y, -ground_thickness * 0.5)
+                ),
+            )
+        )
+
+    start_x = start_platform_length
     current_top_z = 0.0
 
     for step_idx in range(num_steps):
@@ -107,7 +109,7 @@ def straight_stairs_terrain(difficulty: float, cfg: StraightStairsTerrainCfg) ->
         meshes_list.append(step_box)
         start_x += step_depth
 
-    top_platform_length = min(cfg.top_platform_length, max(0.6, cfg.size[0] - start_x - 0.3))
+    top_platform_length = max(0.0, cfg.size[0] - start_x)
     if top_platform_length > 0.0:
         top_landing = trimesh.creation.box(
             (top_platform_length, stair_width, current_top_z),
@@ -118,11 +120,42 @@ def straight_stairs_terrain(difficulty: float, cfg: StraightStairsTerrainCfg) ->
         meshes_list.append(top_landing)
 
     # Spawn a little before the first step and align the centerline with the stair corridor.
-    origin = np.array((cfg.start_platform_length * 0.5, stair_center_y, 0.0))
+    origin = np.array((start_platform_length * 0.5, stair_center_y, 0.0))
     return meshes_list, origin
 
 
-StraightStairsTerrainCfg.function = straight_stairs_terrain
+@configclass
+class StraightStairsTerrainCfg(SubTerrainBaseCfg):
+    """Configuration for a straight stairway aligned with the +x direction."""
+
+    function = straight_stairs_terrain
+
+    stair_width: float = MISSING
+    """Usable stair width along the y-axis."""
+
+    start_platform_length: float = MISSING
+    """Flat landing before the first step."""
+
+    top_platform_length: float = MISSING
+    """Flat landing after the last step."""
+
+    step_height_range: tuple[float, float] = MISSING
+    """Minimum and maximum step height used by the curriculum."""
+
+    step_depth_range: tuple[float, float] = MISSING
+    """Minimum and maximum tread depth used by the curriculum."""
+
+    num_steps_range: tuple[int, int] = MISSING
+    """Minimum and maximum number of steps used by the curriculum."""
+
+    height_jitter: float = 0.0
+    """Deterministic per-step height perturbation amplitude."""
+
+    depth_jitter: float = 0.0
+    """Deterministic per-step depth perturbation amplitude."""
+
+    side_buffer: float = 0.0
+    """Half-width margin on both sides of the stair corridor."""
 
 
 UNITREE_B2_STAIR_TERRAINS_CFG = TerrainGeneratorCfg(

@@ -1,7 +1,7 @@
 # PROJECT PROGRESS
 
 ## Phase
-Initializer
+Coding
 
 ## Initialization Status
 DONE
@@ -10,17 +10,18 @@ DONE
 None
 
 ## Last Completed Task
-TASK-000
+TASK-001
+
+## Last Change Record
+memory/changes/CHANGE-2026-04-11-14-43-02-TASK-001.md
+
+## Current Status
+SUCCESS
 
 ## Repository State
-Clean baseline created after initialization.
+Clean. Ready for next round.
 
 ## Handoff Instruction
-Next agent must read TODO.md, DONE.md, and this file before doing any work.
-Next agent must pick exactly one unchecked task, complete only that task, write a persistent log entry, and create a Git commit before ending the round.
-Assume conversational context will expire; preserve decisions, errors, and the next step on disk.
-
-## Exit Condition
-Initialization complete.
-Initializer Agent must stop now.
-Next execution must be handled by Coding Agent.
+Start by reading TODO.md, DONE.md, this file, latest logs, and latest change record.
+Pick TASK-003 next to establish a reproducible interpreter path for the smoke workflow before attempting TASK-002.
+Assume conversational context will expire; preserve command results and environment findings on disk.

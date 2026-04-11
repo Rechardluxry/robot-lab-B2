@@ -111,20 +111,20 @@ class UnitreeB2StairEnvCfg(UnitreeB2RoughEnvCfg):
         # ------------------------------Events------------------------------
         self.events.randomize_reset_base.params = {
             "pose_range": {
-                "x": (-0.15, 0.25),
-                "y": (-0.12, 0.12),
-                "z": (0.0, 0.04),
+                "x": (-0.05, 0.08),
+                "y": (-0.04, 0.04),
+                "z": (0.0, 0.02),
                 "roll": (0.0, 0.0),
                 "pitch": (0.0, 0.0),
                 "yaw": (0.0, 0.0),
             },
             "velocity_range": {
-                "x": (-0.1, 0.1),
-                "y": (-0.05, 0.05),
-                "z": (-0.05, 0.05),
-                "roll": (-0.05, 0.05),
-                "pitch": (-0.05, 0.05),
-                "yaw": (-0.05, 0.05),
+                "x": (-0.03, 0.03),
+                "y": (-0.02, 0.02),
+                "z": (-0.02, 0.02),
+                "roll": (-0.02, 0.02),
+                "pitch": (-0.02, 0.02),
+                "yaw": (-0.02, 0.02),
             },
         }
 
@@ -191,9 +191,9 @@ class UnitreeB2StairEnvCfg(UnitreeB2RoughEnvCfg):
         self.commands.base_velocity.heading_command = False
         self.commands.base_velocity.rel_heading_envs = 0.0
         self.commands.base_velocity.rel_standing_envs = 0.0
-        self.commands.base_velocity.ranges.lin_vel_x = (0.35, 0.9)
+        self.commands.base_velocity.ranges.lin_vel_x = (0.25, 0.7)
         self.commands.base_velocity.ranges.lin_vel_y = (0.0, 0.0)
-        self.commands.base_velocity.ranges.ang_vel_z = (-0.2, 0.2)
+        self.commands.base_velocity.ranges.ang_vel_z = (-0.05, 0.05)
         self.commands.base_velocity.ranges.heading = None
 
         # If the weight of rewards is 0, set rewards to None

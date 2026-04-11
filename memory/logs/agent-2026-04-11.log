@@ -14,3 +14,6 @@
 [成功] 时间=2026-04-11T16:07:48+0800 任务=TASK-005 验证="已修复自定义楼梯地形的运行时阻塞，并完成 `RobotLab-Isaac-Velocity-Stair-Unitree-B2-v0` 的真实 Isaac Lab 运行时 smoke 验证。" 下一步="下一步选择 TASK-002，为环境列举流程补充可复现的 smoke-check 入口。"
 [信息] 时间=2026-04-11T17:36:55+0800 任务=TASK-006 步骤=实现 信息="已将 `memory/` 目录中现有的状态页、任务页、日志和变更记录的英文叙述翻译为中文，并保留命令、路径、任务编号与文件名不变。"
 [成功] 时间=2026-04-11T17:36:55+0800 任务=TASK-006 验证="已检查翻译后的 memory 文件结构完整，并保持任务历史、命令文本和路径信息可恢复。" 下一步="下一步选择 TASK-002，继续处理可复现的环境列举 smoke-check 入口。"
+[信息] 时间=2026-04-11T18:16:11+0800 任务=TASK-007 步骤=实现 信息="已将 `RobotLab-Isaac-Velocity-Stair-Unitree-B2-v0` 收敛到更受控的 stair v1：terrain 只保留 `flat + straight_stairs`，并把直楼梯 curriculum 调整为低台阶/宽踏面/短楼梯起步，再逐级增加高度、长度与轻微踏面变化；同时固定 reset 朝向并压缩 `base_velocity` 到前向小中速。"
+[错误] 时间=2026-04-11T18:16:11+0800 任务=TASK-007 步骤=验证 信息="额外尝试在 Isaac Sim 运行时执行 `gym.make(...)` 级别的完整 env create smoke，但在 headless 环境创建阶段长时间未返回，已手动清理本轮临时 smoke 进程。另已确认在未启动 `SimulationApp` 前直接导入 Isaac Lab 模块会触发 `ModuleNotFoundError: pxr`。" 下一步="如后续需要继续追踪完整 env create 行为，单独开任务并沿用先启动 `SimulationApp` 的导入顺序。"
+[成功] 时间=2026-04-11T18:16:11+0800 任务=TASK-007 验证="`conda run -n robotlab232_lxr python -m py_compile ...` 与 `git diff --check` 已通过；在 `env TERM=xterm bash ../IsaacLab/isaaclab.sh -p` 下先启动 `SimulationApp` 后，`parse_env_cfg` 与 terrain/reset/command 断言通过并干净退出。" 下一步="下一步选择 TASK-002，为环境列举流程补充可复现的 smoke-check 入口。"

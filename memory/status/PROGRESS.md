@@ -10,10 +10,10 @@
 无
 
 ## 最近完成任务
-TASK-006
+TASK-007
 
 ## 最近变更记录
-memory/changes/CHANGE-2026-04-11-17-36-55-TASK-006.md
+memory/changes/CHANGE-2026-04-11-18-16-11-TASK-007.md
 
 ## 当前状态
 成功
@@ -24,6 +24,5 @@ memory/changes/CHANGE-2026-04-11-17-36-55-TASK-006.md
 ## 交接说明
 先读取 TODO.md、DONE.md、本文件、最新日志和最新变更记录。
 下一轮处理 TASK-002。
-关于 stair 任务的 Isaac Lab 运行时验证，可复用已确认流程：激活 conda 环境 `robotlab232_lxr`，通过 `env TERM=xterm bash ../IsaacLab/isaaclab.sh -p` 进入运行时，然后验证 `parse_env_cfg -> gym.make -> reset -> 一次零动作 step`。
-无头模式下预计会出现非致命的 GLFW/USD/Fabric 警告；stair 任务 smoke 已在这些警告存在时通过。
-假设对话上下文会失效；把精确命令文本、运行结果和环境设定继续保留在磁盘上。
+如果继续验证 stair 任务运行时，请优先复用本轮确认有效的顺序：先在 `isaaclab.sh -p` 下启动 `SimulationApp`，再导入 `isaaclab_tasks` / `robot_lab.tasks` 和执行 `parse_env_cfg`；不要在未启动 `SimulationApp` 前直接导入依赖 `pxr` 的 Isaac Lab 模块。
+本轮已完成对 stair v1 的 terrain/reset/command 收敛，并通过 `SimulationApp + parse_env_cfg` 断言了 `flat + straight_stairs`、固定 yaw reset、以及 `lin_vel_x=(0.25, 0.7)` / `lin_vel_y=(0.0, 0.0)` / `ang_vel_z=(-0.05, 0.05)`。

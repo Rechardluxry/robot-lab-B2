@@ -15,7 +15,7 @@ from isaaclab.managers import RewardTermCfg as RewTerm
 from isaaclab.sensors import ContactSensor, RayCaster
 from isaaclab.utils.math import quat_apply_inverse, yaw_quat
 
-from .utils import is_robot_on_terrain
+from .utils import is_env_assigned_to_terrain, is_robot_on_terrain
 
 if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedRLEnv
@@ -615,22 +615,48 @@ def upward(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("r
     return reward
 
 
+def _stair_local_xy(
+    env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+) -> tuple[RigidObject, torch.Tensor, torch.Tensor]:
+    """Return the root asset and its position in the stair local frame."""
+    asset: RigidObject = env.scene[asset_cfg.name]
+    local_pos = asset.data.root_pos_w[:, :2] - env.scene.env_origins[:, :2]
+    return asset, local_pos[:, 0], local_pos[:, 1]
+
+
+def _stair_centerline_gate(
+    y_offset: torch.Tensor, full_reward_distance: float, decay_sigma: float
+) -> torch.Tensor:
+    """Gate rewards by lateral deviation from the stair centerline."""
+    abs_y = torch.abs(y_offset)
+    overrun = torch.clamp(abs_y - full_reward_distance, min=0.0)
+    sigma = max(decay_sigma, 1e-6)
+    return torch.where(
+        abs_y <= full_reward_distance,
+        torch.ones_like(abs_y),
+        torch.exp(-torch.square(overrun) / (sigma**2)),
+    )
+
+
 def stair_progress(
     env: ManagerBasedRLEnv,
     command_name: str,
     terrain_name: str,
     max_speed: float,
+    centerline_full_reward_distance: float,
+    centerline_decay_sigma: float,
     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
 ) -> torch.Tensor:
     """Reward effective forward progress along the stair direction.
 
-    The stair corridor is aligned with the world +x axis, so the reward uses forward world-frame velocity
-    and only activates when the robot is on the stair terrain with a forward command.
+    The stair corridor is aligned with the world +x axis. Forward progress is coupled with a centerline
+    gate so that the robot only receives the full reward when it stays near the middle of the corridor.
     """
-    asset: RigidObject = env.scene[asset_cfg.name]
-    on_stairs = is_robot_on_terrain(env, terrain_name)
+    asset, _, y_offset = _stair_local_xy(env, asset_cfg)
+    on_stairs = is_env_assigned_to_terrain(env, terrain_name)
     forward_cmd = env.command_manager.get_command(command_name)[:, 0] > 0.1
-    reward = torch.clamp(asset.data.root_lin_vel_w[:, 0], min=0.0, max=max_speed)
+    centerline_gate = _stair_centerline_gate(y_offset, centerline_full_reward_distance, centerline_decay_sigma)
+    reward = torch.clamp(asset.data.root_lin_vel_w[:, 0], min=0.0, max=max_speed) * centerline_gate
     reward *= on_stairs & forward_cmd
     reward *= torch.clamp(-env.scene["robot"].data.projected_gravity_b[:, 2], 0.0, 0.7) / 0.7
     return reward
@@ -643,10 +669,29 @@ def centerline_reward(
     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
 ) -> torch.Tensor:
     """Reward staying close to the stair corridor centerline in env-local coordinates."""
-    asset: RigidObject = env.scene[asset_cfg.name]
-    on_stairs = is_robot_on_terrain(env, terrain_name)
-    y_offset = asset.data.root_pos_w[:, 1] - env.scene.env_origins[:, 1]
+    _, _, y_offset = _stair_local_xy(env, asset_cfg)
+    on_stairs = is_env_assigned_to_terrain(env, terrain_name)
     reward = torch.exp(-torch.square(y_offset) / (sigma**2))
+    reward *= on_stairs
+    reward *= torch.clamp(-env.scene["robot"].data.projected_gravity_b[:, 2], 0.0, 0.7) / 0.7
+    return reward
+
+
+def edge_proximity_penalty(
+    env: ManagerBasedRLEnv,
+    terrain_name: str,
+    stair_width: float,
+    safe_margin: float,
+    power: float,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+) -> torch.Tensor:
+    """Penalize the base for approaching the stair side edges too closely."""
+    _, _, y_offset = _stair_local_xy(env, asset_cfg)
+    on_stairs = is_env_assigned_to_terrain(env, terrain_name)
+    half_width = 0.5 * stair_width
+    edge_distance = torch.clamp(half_width - torch.abs(y_offset), min=0.0)
+    normalized_risk = torch.clamp((safe_margin - edge_distance) / max(safe_margin, 1e-6), min=0.0, max=1.0)
+    reward = torch.pow(normalized_risk, power)
     reward *= on_stairs
     reward *= torch.clamp(-env.scene["robot"].data.projected_gravity_b[:, 2], 0.0, 0.7) / 0.7
     return reward

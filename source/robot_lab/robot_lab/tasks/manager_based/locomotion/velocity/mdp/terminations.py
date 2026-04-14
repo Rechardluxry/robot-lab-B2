@@ -9,8 +9,9 @@ import torch
 
 from isaaclab.assets import RigidObject
 from isaaclab.managers import SceneEntityCfg
+import isaaclab.utils.math as math_utils
 
-from .utils import is_robot_on_terrain
+from .utils import is_env_assigned_to_terrain, is_robot_on_terrain
 
 if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedRLEnv
@@ -72,3 +73,47 @@ def continuous_back_slip(
 
     max_steps = max(1, int(max_back_slip_duration_s / env.step_dt))
     return env._stair_back_slip_steps >= max_steps
+
+
+def stair_top_platform_success(
+    env: ManagerBasedRLEnv,
+    terrain_name: str,
+    terrain_length: float,
+    start_platform_length: float,
+    top_platform_length: float,
+    lateral_tolerance: float,
+    pitch_roll_threshold: float,
+    success_duration_s: float,
+    entry_margin: float,
+    far_edge_margin: float,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+) -> torch.Tensor:
+    """Terminate successfully once the robot stabilizes inside the conservative top-platform region."""
+    asset: RigidObject = env.scene[asset_cfg.name]
+    if not hasattr(env, "_stair_top_success_steps"):
+        env._stair_top_success_steps = torch.zeros(env.num_envs, dtype=torch.long, device=env.device)
+
+    env._stair_top_success_steps[env.episode_length_buf <= 1] = 0
+
+    local_pos = asset.data.root_pos_w[:, :2] - env.scene.env_origins[:, :2]
+    local_x = local_pos[:, 0]
+    local_y = local_pos[:, 1]
+    roll, pitch, _ = math_utils.euler_xyz_from_quat(asset.data.root_quat_w)
+
+    top_region_start = terrain_length - top_platform_length - 0.5 * start_platform_length + entry_margin
+    top_region_end = max(top_region_start + 1e-3, terrain_length - 0.5 * start_platform_length - far_edge_margin)
+
+    on_stair_episode = is_env_assigned_to_terrain(env, terrain_name)
+    in_top_region = (local_x >= top_region_start) & (local_x <= top_region_end)
+    centered = torch.abs(local_y) <= lateral_tolerance
+    stable = (torch.abs(roll) <= pitch_roll_threshold) & (torch.abs(pitch) <= pitch_roll_threshold)
+    success_now = on_stair_episode & in_top_region & centered & stable
+
+    env._stair_top_success_steps = torch.where(
+        success_now,
+        env._stair_top_success_steps + 1,
+        torch.zeros_like(env._stair_top_success_steps),
+    )
+
+    max_steps = max(1, int(success_duration_s / env.step_dt))
+    return env._stair_top_success_steps >= max_steps

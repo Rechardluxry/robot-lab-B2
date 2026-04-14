@@ -10,10 +10,10 @@
 无
 
 ## 最近完成任务
-TASK-009
+TASK-010
 
 ## 最近变更记录
-memory/changes/CHANGE-2026-04-14-13-08-00-TASK-009.md
+memory/changes/CHANGE-2026-04-15-00-48-09-TASK-010.md
 
 ## 当前状态
 成功
@@ -23,5 +23,5 @@ memory/changes/CHANGE-2026-04-14-13-08-00-TASK-009.md
 
 ## 交接说明
 先读取 TODO.md、DONE.md、本文件、最新日志和最新变更记录。
-最近完成 TASK-009：已按用户要求清理已取消的待办项，并同步整理当前交接状态。
+最近完成 TASK-010：已为稳定版 B2 stair v1 增加顶部 success termination、边缘接近惩罚、中线耦合进度奖励，并进一步收紧 reset 的横向分布。
 当前无待办任务。下一轮先读取本文件、TODO.md、DONE.md、最新日志与最新变更记录；若无新需求，则保持仓库待命。

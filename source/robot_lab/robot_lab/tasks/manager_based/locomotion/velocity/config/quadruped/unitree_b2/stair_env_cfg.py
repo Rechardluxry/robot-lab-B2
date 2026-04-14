@@ -20,7 +20,13 @@ class UnitreeB2StairRewardsCfg(RewardsCfg):
     stair_progress = RewTerm(
         func=mdp.stair_progress,
         weight=0.0,
-        params={"command_name": "base_velocity", "terrain_name": "straight_stairs", "max_speed": 1.0},
+        params={
+            "command_name": "base_velocity",
+            "terrain_name": "straight_stairs",
+            "max_speed": 1.0,
+            "centerline_full_reward_distance": 0.22,
+            "centerline_decay_sigma": 0.18,
+        },
     )
     centerline_reward = RewTerm(
         func=mdp.centerline_reward,
@@ -59,6 +65,16 @@ class UnitreeB2StairRewardsCfg(RewardsCfg):
         weight=0.0,
         params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=""), "threshold": 1.0},
     )
+    edge_proximity_penalty = RewTerm(
+        func=mdp.edge_proximity_penalty,
+        weight=0.0,
+        params={
+            "terrain_name": "straight_stairs",
+            "stair_width": 1.0,
+            "safe_margin": 0.24,
+            "power": 2.0,
+        },
+    )
 
 
 @configclass
@@ -91,6 +107,20 @@ class UnitreeB2StairTerminationsCfg(TerminationsCfg):
         func=mdp.illegal_contact,
         params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=""), "threshold": 60.0},
     )
+    success = DoneTerm(
+        func=mdp.stair_top_platform_success,
+        params={
+            "terrain_name": "straight_stairs",
+            "terrain_length": 8.0,
+            "start_platform_length": 2.0,
+            "top_platform_length": 1.8,
+            "lateral_tolerance": 0.30,
+            "pitch_roll_threshold": 0.30,
+            "success_duration_s": 0.25,
+            "entry_margin": 0.20,
+            "far_edge_margin": 0.35,
+        },
+    )
 
 
 @configclass
@@ -107,12 +137,14 @@ class UnitreeB2StairEnvCfg(UnitreeB2RoughEnvCfg):
         self.scene.terrain.terrain_generator = UNITREE_B2_STAIR_TERRAINS_CFG
         # Start every episode from the easiest stair row and let curriculum move upward.
         self.scene.terrain.max_init_terrain_level = 0
+        stair_cfg = self.scene.terrain.terrain_generator.sub_terrains["straight_stairs"]
+        terrain_length = self.scene.terrain.terrain_generator.size[0]
 
         # ------------------------------Events------------------------------
         self.events.randomize_reset_base.params = {
             "pose_range": {
                 "x": (-0.05, 0.08),
-                "y": (-0.04, 0.04),
+                "y": (-0.02, 0.02),
                 "z": (0.0, 0.02),
                 "roll": (0.0, 0.0),
                 "pitch": (0.0, 0.0),
@@ -120,7 +152,7 @@ class UnitreeB2StairEnvCfg(UnitreeB2RoughEnvCfg):
             },
             "velocity_range": {
                 "x": (-0.03, 0.03),
-                "y": (-0.02, 0.02),
+                "y": (-0.01, 0.01),
                 "z": (-0.02, 0.02),
                 "roll": (-0.02, 0.02),
                 "pitch": (-0.02, 0.02),
@@ -161,12 +193,15 @@ class UnitreeB2StairEnvCfg(UnitreeB2RoughEnvCfg):
         self.rewards.upward.weight = 4.5
 
         self.rewards.stair_progress.weight = 2.5
-        self.rewards.centerline_reward.weight = 1.0
+        self.rewards.centerline_reward.weight = 1.2
+        self.rewards.centerline_reward.params["sigma"] = 0.25
         self.rewards.stall_penalty.weight = -1.5
         self.rewards.back_slip_penalty.weight = -1.5
         self.rewards.foot_clearance_reward.weight = 0.6
         self.rewards.foot_clearance_reward.params["asset_cfg"].body_names = [self.foot_link_name]
         self.rewards.body_collision_penalty.weight = -3.0
+        self.rewards.edge_proximity_penalty.weight = -1.0
+        self.rewards.edge_proximity_penalty.params["stair_width"] = stair_cfg.stair_width
         self.rewards.body_collision_penalty.params["sensor_cfg"].body_names = [
             self.base_link_name,
             ".*_hip",
@@ -181,6 +216,9 @@ class UnitreeB2StairEnvCfg(UnitreeB2RoughEnvCfg):
             self.base_link_name,
             ".*_thigh",
         ]
+        self.terminations.success.params["terrain_length"] = terrain_length
+        self.terminations.success.params["start_platform_length"] = stair_cfg.start_platform_length
+        self.terminations.success.params["top_platform_length"] = stair_cfg.top_platform_length
 
         # ------------------------------Curriculums------------------------------
         self.curriculum.command_levels_lin_vel = None

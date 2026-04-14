@@ -10,10 +10,10 @@
 无
 
 ## 最近完成任务
-TASK-008
+TASK-009
 
 ## 最近变更记录
-memory/changes/CHANGE-2026-04-14-12-58-47-TASK-008.md
+memory/changes/CHANGE-2026-04-14-13-08-00-TASK-009.md
 
 ## 当前状态
 成功
@@ -23,5 +23,5 @@ memory/changes/CHANGE-2026-04-14-12-58-47-TASK-008.md
 
 ## 交接说明
 先读取 TODO.md、DONE.md、本文件、最新日志和最新变更记录。
-最近完成 TASK-008：已放松 stair v1 的 `body_collision` termination、减缓楼梯 curriculum 的前期难度增长，并降低 PPO 探索强度。
-下一轮优先处理 TASK-002，并继续沿用 `conda activate robotlab232_lxr` 与 Isaac Lab shell 的可复现验证方式。
+最近完成 TASK-009：已按用户要求清理已取消的待办项，并同步整理当前交接状态。
+当前无待办任务。下一轮先读取本文件、TODO.md、DONE.md、最新日志与最新变更记录；若无新需求，则保持仓库待命。

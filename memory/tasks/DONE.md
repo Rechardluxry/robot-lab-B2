@@ -8,3 +8,4 @@
 - [x] TASK-006: 将 `memory/` 目录中当前保留的英文状态内容翻译为中文，并保持命令、路径、任务编号与文件名不变
 - [x] TASK-007: 将 B2 stair 任务收敛为标准直楼梯前向通过的 stair v1，只保留 flat+straight stairs、固定 reset 朝向，并将命令范围压缩到前向小中速
 - [x] TASK-008: 对 B2 stair v1 做稳定性修正，放松 body_collision termination、进一步放慢第一档楼梯 curriculum，并降低 PPO 探索强度以减少第一阶重启和步态退化
+- [x] TASK-009: 按用户要求删除已不再继续的 TASK-002，并同步清理待办列表与交接状态

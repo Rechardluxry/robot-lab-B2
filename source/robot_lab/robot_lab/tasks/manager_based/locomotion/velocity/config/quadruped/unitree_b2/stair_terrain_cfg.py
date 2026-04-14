@@ -37,25 +37,41 @@ def straight_stairs_terrain(difficulty: float, cfg: StraightStairsTerrainCfg) ->
     step_height_range = cfg.step_height_range
     step_depth_range = cfg.step_depth_range
     num_steps_range = cfg.num_steps_range
+    # Stretch the easy band across more rows so the curriculum does not immediately
+    # advance to higher steps once the robot barely starts contacting the first stair.
     stage_profiles = (
         {
-            "height_fraction": (0.0, 0.25),
-            "depth_fraction": (0.0, 0.20),
-            "step_fraction": (0.0, 0.20),
+            "height_fraction": (0.0, 0.06),
+            "depth_fraction": (0.0, 0.08),
+            "step_fraction": (0.0, 0.08),
             "height_jitter": 0.0,
             "depth_jitter": 0.0,
         },
         {
-            "height_fraction": (0.25, 0.65),
-            "depth_fraction": (0.20, 0.60),
-            "step_fraction": (0.20, 0.65),
-            "height_jitter": 0.35 * cfg.height_jitter,
+            "height_fraction": (0.06, 0.16),
+            "depth_fraction": (0.08, 0.20),
+            "step_fraction": (0.08, 0.20),
+            "height_jitter": 0.0,
             "depth_jitter": 0.0,
         },
         {
-            "height_fraction": (0.65, 1.0),
-            "depth_fraction": (0.60, 1.0),
-            "step_fraction": (0.65, 1.0),
+            "height_fraction": (0.16, 0.38),
+            "depth_fraction": (0.20, 0.42),
+            "step_fraction": (0.20, 0.45),
+            "height_jitter": 0.15 * cfg.height_jitter,
+            "depth_jitter": 0.0,
+        },
+        {
+            "height_fraction": (0.38, 0.68),
+            "depth_fraction": (0.42, 0.70),
+            "step_fraction": (0.45, 0.72),
+            "height_jitter": 0.4 * cfg.height_jitter,
+            "depth_jitter": 0.2 * cfg.depth_jitter,
+        },
+        {
+            "height_fraction": (0.68, 1.0),
+            "depth_fraction": (0.70, 1.0),
+            "step_fraction": (0.72, 1.0),
             "height_jitter": cfg.height_jitter,
             "depth_jitter": cfg.depth_jitter,
         },
@@ -186,7 +202,7 @@ class StraightStairsTerrainCfg(SubTerrainBaseCfg):
 UNITREE_B2_STAIR_TERRAINS_CFG = TerrainGeneratorCfg(
     size=(8.0, 8.0),
     border_width=20.0,
-    num_rows=3,
+    num_rows=5,
     num_cols=20,
     horizontal_scale=0.1,
     vertical_scale=0.005,
@@ -200,13 +216,13 @@ UNITREE_B2_STAIR_TERRAINS_CFG = TerrainGeneratorCfg(
         "straight_stairs": StraightStairsTerrainCfg(
             proportion=0.85,
             stair_width=1.7,
-            start_platform_length=1.8,
-            top_platform_length=1.6,
-            step_height_range=(0.05, 0.15),
-            step_depth_range=(0.50, 0.32),
-            num_steps_range=(4, 8),
-            height_jitter=0.006,
-            depth_jitter=0.015,
+            start_platform_length=2.0,
+            top_platform_length=1.8,
+            step_height_range=(0.04, 0.145),
+            step_depth_range=(0.60, 0.34),
+            num_steps_range=(3, 7),
+            height_jitter=0.004,
+            depth_jitter=0.01,
             side_buffer=0.85,
         ),
     },

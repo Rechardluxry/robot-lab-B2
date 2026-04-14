@@ -47,4 +47,10 @@ class UnitreeB2FlatPPORunnerCfg(UnitreeB2RoughPPORunnerCfg):
 
 @configclass
 class UnitreeB2StairPPORunnerCfg(UnitreeB2RoughPPORunnerCfg):
-    experiment_name = "unitree_b2_stair"
+    def __post_init__(self):
+        super().__post_init__()
+
+        self.experiment_name = "unitree_b2_stair"
+        self.policy.init_noise_std = 0.6
+        self.algorithm.entropy_coef = 0.005
+        self.algorithm.learning_rate = 7.5e-4

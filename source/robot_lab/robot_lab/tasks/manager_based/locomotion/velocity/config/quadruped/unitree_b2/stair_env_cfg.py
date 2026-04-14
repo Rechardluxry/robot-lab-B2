@@ -89,7 +89,7 @@ class UnitreeB2StairTerminationsCfg(TerminationsCfg):
     )
     body_collision = DoneTerm(
         func=mdp.illegal_contact,
-        params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=""), "threshold": 25.0},
+        params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=""), "threshold": 60.0},
     )
 
 
@@ -176,11 +176,10 @@ class UnitreeB2StairEnvCfg(UnitreeB2RoughEnvCfg):
 
         # ------------------------------Terminations------------------------------
         self.terminations.illegal_contact = None
+        # B2 does not expose a separate torso link in the URDF, so base_link covers trunk collisions here.
         self.terminations.body_collision.params["sensor_cfg"].body_names = [
             self.base_link_name,
-            ".*_hip",
             ".*_thigh",
-            ".*_calf",
         ]
 
         # ------------------------------Curriculums------------------------------

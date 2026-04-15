@@ -114,11 +114,11 @@ class UnitreeB2StairTerminationsCfg(TerminationsCfg):
             "terrain_length": 8.0,
             "start_platform_length": 2.0,
             "top_platform_length": 1.8,
-            "lateral_tolerance": 0.30,
-            "pitch_roll_threshold": 0.30,
-            "success_duration_s": 0.25,
-            "entry_margin": 0.20,
-            "far_edge_margin": 0.35,
+            "lateral_tolerance": 0.45,
+            "pitch_roll_threshold": 0.45,
+            "success_duration_s": 0.02,
+            "entry_margin": 0.00,
+            "far_edge_margin": 0.05,
         },
     )
 

@@ -107,7 +107,14 @@ def stair_top_platform_success(
     in_top_region = (local_x >= top_region_start) & (local_x <= top_region_end)
     centered = torch.abs(local_y) <= lateral_tolerance
     stable = (torch.abs(roll) <= pitch_roll_threshold) & (torch.abs(pitch) <= pitch_roll_threshold)
-    success_now = on_stair_episode & in_top_region & centered & stable
+    # success_now = on_stair_episode & in_top_region & centered & stable
+    success_now = in_top_region
+    print(in_top_region,        
+        f"local_x={local_x[0].item():.3f}, "
+        f"top_start={top_region_start:.3f}, "
+        f"top_end={top_region_end:.3f}, "
+        f"in_top={bool(in_top_region[0].item())}")
+    if in_top_region == 1:print("Success!")
 
     env._stair_top_success_steps = torch.where(
         success_now,

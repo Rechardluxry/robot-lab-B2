@@ -10,4 +10,4 @@
 - [x] TASK-008: 对 B2 stair v1 做稳定性修正，放松 body_collision termination、进一步放慢第一档楼梯 curriculum，并降低 PPO 探索强度以减少第一阶重启和步态退化
 - [x] TASK-009: 按用户要求删除已不再继续的 TASK-002，并同步清理待办列表与交接状态
 - [x] TASK-010: 为稳定版 B2 stair v1 增加边缘安全与顶部完成逻辑，加入顶部 success termination、中线耦合进度奖励、edge_proximity_penalty 和更居中的 reset
-- [x] TASK-011: 确认当前仓库状态已同步到 GitHub，并修复 memory 状态与最新 Git 历史之间的记录差异
+- [x] TASK-012: 修正 GitHub 上传失败后的 memory 状态，将错误标记为成功的 TASK-011 重新落盘为阻塞态
